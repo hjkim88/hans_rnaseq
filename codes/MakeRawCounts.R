@@ -90,18 +90,10 @@ makeRCnt <- function(fastqgzPath="//isilon.c2b2.columbia.edu/ifs/archive/shares/
   bamFiles <- bamFiles[which(endsWith(bamFiles, ".bam"))]
   
   ### iteratively get counts from the bam files
-  rawCnt <- NULL
-  for(i in 1:length(bamFiles)) {
-    counts <- featureCounts(files = paste0(fastqgzPath, "../bam_files/", bamFiles[i]),
-                            annot.inbuilt = "mm10",
-                            isPairedEnd = TRUE)
-    
-    if(is.null(rawCnt)) {
-      rawCnt <- counts$counts
-    } else {
-      rawCnt <- cbind(rawCnt, counts$counts)
-    }
-  }
+  rawCnt <- featureCounts(files = paste0(fastqgzPath, "../bam_files/", bamFiles),
+                          annot.inbuilt = "mm10",
+                          isPairedEnd = TRUE)
+  rawCnt <- rawCnt$counts
   
   ### numerize the raw counts (now they are characters)
   rawCnt <- as.data.frame(rawCnt)
