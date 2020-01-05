@@ -16,9 +16,20 @@ if(!require(VennDiagram, quietly = TRUE)) {
   BiocManager::install("VennDiagram")
   require(VennDiagram, quietly = TRUE)
 }
+if(!require(org.Mm.eg.db, quietly = TRUE)) {
+  if(!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+  BiocManager::install("org.Mm.eg.db")
+  require(org.Mm.eg.db, quietly = TRUE)
+}
 if(!require(gridExtra, quietly = TRUE)) {
   install.packages("gridExtra")
   library(gridExtra, quietly = TRUE)
+}
+### load library
+if(!require(xlsx, quietly = TRUE)) {
+  install.packages("xlsx")
+  require(xlsx, quietly = TRUE)
 }
 
 ### the path of the DE results
@@ -34,8 +45,20 @@ B <- read.table(path_B, header = TRUE, sep = "\t", stringsAsFactors = FALSE, che
 
 ### 1. A (FDR < 0.05) & B (P > 0.1)
 genes <- intersect(A$Gene_Symbol[which(A$adj.P.Val < 0.05)], B$Gene_Symbol[which(B$P.Value > 0.1)])
-write.table(genes, file = paste0(result_path, "AD_FDR_0.05_FT_P_0.1.txt"),
-            sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+remove_idx <- unique(c(which(is.na(genes)), which(is.null(genes)), which(genes == "NULL"), which(genes == "NA")))
+if(length(remove_idx) > 0) {
+  genes <- genes[-remove_idx]
+}
+result_table <- data.frame(Gene_Symbol=genes,
+                           Gene_Name=mapIds(org.Mm.eg.db, genes, c("GENENAME"), "ALIAS"),
+                           logFC_ABM_High_Ca2_vs_Low_Ca2BM_High_Ca2_vs_Low_Ca2=A$logFC[which(A$Gene_Symbol %in% genes)],
+                           logFC_FL_High_Ca2_vs_Low_Ca2=B$logFC[which(B$Gene_Symbol %in% genes)],
+                           PVal_ABM_High_Ca2_vs_Low_Ca2=A$P.Value[which(A$Gene_Symbol %in% genes)],
+                           PVal_FL_High_Ca2_vs_Low_Ca2=B$P.Value[which(B$Gene_Symbol %in% genes)],
+                           FDR_ABM_High_Ca2_vs_Low_Ca2=A$adj.P.Val[which(A$Gene_Symbol %in% genes)],
+                           FDR_FL_High_Ca2_vs_Low_Ca2=B$adj.P.Val[which(B$Gene_Symbol %in% genes)])
+write.xlsx2(result_table, file = paste0(result_path, "AD_FDR_0.05_FT_P_0.1.xlsx"),
+            sheetName = "Venn_Result", row.names = FALSE)
 v1 <- venn.diagram(list(A$Gene_Symbol[which(A$adj.P.Val < 0.05)], B$Gene_Symbol[which(B$P.Value > 0.1)]),
                    category.names = c("Adult\nHigh vs Low Ca2+\nFDR < 0.05",
                                       "Fetal\nHigh vs Low Ca2+\nP > 0.1"),
@@ -51,8 +74,20 @@ dev.off()
 
 ### 2. A (P > 0.1) & B (FDR < 0.05)
 genes <- intersect(A$Gene_Symbol[which(A$P.Value > 0.1)], B$Gene_Symbol[which(B$adj.P.Val < 0.05)])
-write.table(genes, file = paste0(result_path, "AD_P_0.1_FT_FDR_0.05.txt"),
-            sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+remove_idx <- unique(c(which(is.na(genes)), which(is.null(genes)), which(genes == "NULL"), which(genes == "NA")))
+if(length(remove_idx) > 0) {
+  genes <- genes[-remove_idx]
+}
+result_table <- data.frame(Gene_Symbol=genes,
+                           Gene_Name=mapIds(org.Mm.eg.db, genes, c("GENENAME"), "ALIAS"),
+                           logFC_ABM_High_Ca2_vs_Low_Ca2=A$logFC[which(A$Gene_Symbol %in% genes)],
+                           logFC_FL_High_Ca2_vs_Low_Ca2=B$logFC[which(B$Gene_Symbol %in% genes)],
+                           PVal_ABM_High_Ca2_vs_Low_Ca2=A$P.Value[which(A$Gene_Symbol %in% genes)],
+                           PVal_FL_High_Ca2_vs_Low_Ca2=B$P.Value[which(B$Gene_Symbol %in% genes)],
+                           FDR_ABM_High_Ca2_vs_Low_Ca2=A$adj.P.Val[which(A$Gene_Symbol %in% genes)],
+                           FDR_FL_High_Ca2_vs_Low_Ca2=B$adj.P.Val[which(B$Gene_Symbol %in% genes)])
+write.xlsx2(result_table, file = paste0(result_path, "AD_P_0.1_FT_FDR_0.05.xlsx"),
+            sheetName = "Venn_Result", row.names = FALSE)
 v2 <- venn.diagram(list(A$Gene_Symbol[which(A$P.Value > 0.1)], B$Gene_Symbol[which(B$adj.P.Val < 0.05)]),
                    category.names = c("Adult\nHigh vs Low Ca2+\nP > 0.1",
                                       "Fetal\nHigh vs Low Ca2+\nFDR < 0.05"),
@@ -68,8 +103,36 @@ dev.off()
 
 ### 3. A (FDR < 0.05) & B (FDR < 0.05)
 genes <- intersect(A$Gene_Symbol[which(A$adj.P.Val < 0.05)], B$Gene_Symbol[which(B$adj.P.Val < 0.05)])
-write.table(genes, file = paste0(result_path, "AD_FDR_0.05_FT_FDR_0.05.txt"),
-            sep = "\t", row.names = FALSE, col.names = FALSE, quote = FALSE)
+remove_idx <- unique(c(which(is.na(genes)), which(is.null(genes)), which(genes == "NULL"), which(genes == "NA")))
+if(length(remove_idx) > 0) {
+  genes <- genes[-remove_idx]
+}
+result_table <- data.frame(Gene_Symbol=genes,
+                           Gene_Name=mapIds(org.Mm.eg.db, genes, c("GENENAME"), "ALIAS"),
+                           logFC_ABM_High_Ca2_vs_Low_Ca2=A$logFC[which(A$Gene_Symbol %in% genes)],
+                           logFC_FL_High_Ca2_vs_Low_Ca2=B$logFC[which(B$Gene_Symbol %in% genes)],
+                           PVal_ABM_High_Ca2_vs_Low_Ca2=A$P.Value[which(A$Gene_Symbol %in% genes)],
+                           PVal_FL_High_Ca2_vs_Low_Ca2=B$P.Value[which(B$Gene_Symbol %in% genes)],
+                           FDR_ABM_High_Ca2_vs_Low_Ca2=A$adj.P.Val[which(A$Gene_Symbol %in% genes)],
+                           FDR_FL_High_Ca2_vs_Low_Ca2=B$adj.P.Val[which(B$Gene_Symbol %in% genes)])
+write.xlsx2(result_table, file = paste0(result_path, "AD_FDR_0.05_FT_FDR_0.05.xlsx"),
+            sheetName = "Venn_Result", row.names = FALSE)
+### ++
+write.xlsx2(result_table[intersect(which(result_table$logFC_ABM_High_Ca2_vs_Low_Ca2 > 0), which(result_table$logFC_FL_High_Ca2_vs_Low_Ca2 > 0)),],
+            file = paste0(result_path, "AD_FDR_0.05_FT_FDR_0.05_logFC++.xlsx"),
+            sheetName = "Venn_Result", row.names = FALSE)
+### --
+write.xlsx2(result_table[intersect(which(result_table$logFC_ABM_High_Ca2_vs_Low_Ca2 < 0), which(result_table$logFC_FL_High_Ca2_vs_Low_Ca2 < 0)),],
+            file = paste0(result_path, "AD_FDR_0.05_FT_FDR_0.05_logFC--.xlsx"),
+            sheetName = "Venn_Result", row.names = FALSE)
+### +-
+write.xlsx2(result_table[intersect(which(result_table$logFC_ABM_High_Ca2_vs_Low_Ca2 > 0), which(result_table$logFC_FL_High_Ca2_vs_Low_Ca2 < 0)),],
+            file = paste0(result_path, "AD_FDR_0.05_FT_FDR_0.05_logFC+-.xlsx"),
+            sheetName = "Venn_Result", row.names = FALSE)
+### -+
+write.xlsx2(result_table[intersect(which(result_table$logFC_ABM_High_Ca2_vs_Low_Ca2 < 0), which(result_table$logFC_FL_High_Ca2_vs_Low_Ca2 > 0)),],
+            file = paste0(result_path, "AD_FDR_0.05_FT_FDR_0.05_logFC-+.xlsx"),
+            sheetName = "Venn_Result", row.names = FALSE)
 v3 <- venn.diagram(list(A$Gene_Symbol[which(A$adj.P.Val < 0.05)], B$Gene_Symbol[which(B$adj.P.Val < 0.05)]),
                    category.names = c("Adult\nHigh vs Low Ca2+\nFDR < 0.05",
                                       "Fetal\nHigh vs Low Ca2+\nFDR < 0.05"),
@@ -82,3 +145,48 @@ grid.arrange(gTree(children=v3),
              top=paste0("Adult High vs Low FDR < 0.05 & Fetal High vs Low FDR < 0.05"),
              bottom="")
 dev.off()
+
+
+### second Venn analysis
+### Venn analysis with the signature genes from Wilson et al.
+
+### load the signature genes
+sig_genes1 <- read.table(file = "C:/Research/CUMC/Hans_RNASeq/data/genes_of_interest/MolO_vs_NoMO.txt",
+                         sep = "\t", stringsAsFactors = FALSE, check.names = FALSE)[,1]
+sig_genes2 <- read.table(file = "C:/Research/CUMC/Hans_RNASeq/data/genes_of_interest/DE_signature_genes.txt",
+                         sep = "\t", stringsAsFactors = FALSE, check.names = FALSE)[,1]
+sig_genes3 <- read.table(file = "C:/Research/CUMC/Hans_RNASeq/data/genes_of_interest/DE_signature_genes2.txt",
+                         sep = "\t", stringsAsFactors = FALSE, check.names = FALSE)[,1]
+sig_genes <- unique(union(union(sig_genes1, sig_genes2), sig_genes3))
+
+### annotate our exp's DE statistics to the genes
+sig_result <- data.frame(Gene_Symbol=sig_genes,
+                         Gene_Name=mapIds(org.Mm.eg.db, sig_genes, c("GENENAME"), "ALIAS"),
+                         Appeared=sapply(sig_genes, function(x) {
+                           y <- ""
+                           if(length(which(sig_genes1 == x)) > 0) {
+                             y <- paste(y, "Fig2", sep = "/")
+                           }
+                           if(length(which(sig_genes2 == x)) > 0) {
+                             y <- paste(y, "Fig3", sep = "/")
+                           }
+                           if(length(which(sig_genes3 == x)) > 0) {
+                             y <- paste(y, "Fig5", sep = "/")
+                           }
+                           return(substring(y, 2))
+                         }),
+                         stringsAsFactors = FALSE, check.names = FALSE)
+sig_result <- merge(sig_result, A[,c("Gene_Symbol", "logFC", "P.Value", "adj.P.Val")],
+                    by.x = "Gene_Symbol", by.y = "Gene_Symbol",
+                    all.x = TRUE)
+sig_result <- merge(sig_result, B[,c("Gene_Symbol", "logFC", "P.Value", "adj.P.Val")],
+                    by.x = "Gene_Symbol", by.y = "Gene_Symbol",
+                    all.x = TRUE)
+colnames(sig_result) <- c("Gene_Symbol", "Gene_Name", "Source in Wilson paper",
+                          "logFC_ABM_High_Ca2_vs_Low_Ca2", "PVal_ABM_High_Ca2_vs_Low_Ca2",
+                          "FDR_ABM_High_Ca2_vs_Low_Ca2", "logFC_FL_High_Ca2_vs_Low_Ca2",
+                          "PVal_FL_High_Ca2_vs_Low_Ca2", "FDR_FL_High_Ca2_vs_Low_Ca2")
+
+### print out the results
+write.xlsx2(sig_result, file = paste0(result_path, "Wilson_Signature_Genes.xlsx"),
+            sheetName = "Venn_Result", row.names = FALSE)
